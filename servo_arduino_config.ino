@@ -7,9 +7,16 @@ Servo servo[3];
 const byte numBytes = 6;
 byte pins[3];
 
-byte userPrompt() {
+struct servoStruct {
+  short activePin = -1;
+  short angle = -1;
+} ss;
+
+servoStruct userPromptGUI() {
+  servoStruct temp;
   short val = -1;
   byte receivedBytes[numBytes];
+  byte dividerPos = 0;
   static bool receivingData = false;
   static byte idx = 0;
 
@@ -20,15 +27,33 @@ byte userPrompt() {
       if (recv == ENDMARKER) {
         receivingData = false;
         receivedBytes[idx] = '\0';
-        val = 0;
-        for (byte i = 0; i < idx; i++) {
-          val += (receivedBytes[i]-'0') * ceil(pow(10, idx-i-1));
+        if (idx != 1) {
+          temp.angle = 0;
+          for (byte i = dividerPos+1; i < idx; i++) {
+            temp.angle += (receivedBytes[i]-'0') * ceil(pow(10, idx-i-1));
+          }
+  //        Serial.println(ss.activePin);
+  //        Serial.println(ss.angle);
+        }
+        else {
+          servo[receivedBytes[0]-'0'].write(0);
+          delay(1000);
+          servo[receivedBytes[0]-'0'].write(180);
+          delay(1000);
+          servo[receivedBytes[0]-'0'].write(0);
         }
         idx = 0;
       }
-  
+      
       if (receivingData) {
         receivedBytes[idx] = recv;
+        if (recv == ':') {
+          dividerPos = idx;
+          temp.activePin = 0;
+          for (byte i = 0; i < dividerPos; i++) {
+            temp.activePin += (receivedBytes[i]-'0') * ceil(pow(10, dividerPos-i-1));
+          }
+        }
         idx++;
       }
   
@@ -37,10 +62,9 @@ byte userPrompt() {
         memset(receivedBytes, '\0', numBytes);
       }
     }
-
-    if (val >= 0) break;
+    if (temp.angle >= 0 && temp.activePin >= 0) break;
   }
-  return val;
+  return temp;
 }
 
 void setup() {
@@ -62,11 +86,11 @@ void setup() {
 
 void loop() {
   byte servoIdx, angle;
-  
-  Serial.println("Debug which servo?");
-  servoIdx = userPrompt();
-  Serial.println(servoIdx);
-  Serial.println("How much angle?");
-  Serial.println(angle);
-  servo[servoIdx].write(angle);
+   ss = userPromptGUI();
+  if (ss.activePin != -1 && ss.angle != -1) {
+    servo[ss.activePin].write(ss.angle);
+  }
+  ss.activePin = -1;
+  ss.angle = -1;
+  Serial.flush();
 }
