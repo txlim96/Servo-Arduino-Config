@@ -11,7 +11,7 @@ class ServoArduinoUI(object):
         self.master.config(bg='black')
         self.master.title("Servo Arduino Configuration")
         self.comPort = []
-        self.spinbox = []
+        self.home= {'0': '0', '1':'0', '2':'0', '3':'0'}
         connected = False
         changePin = True
         servoState = 'normal'
@@ -20,6 +20,12 @@ class ServoArduinoUI(object):
         self.frameTop2()
         self.frameTop3()
         self.frameTop4()
+        self.frameTop5()
+
+        self.strReturnHomeText = StringVar()
+        self.strReturnHomeText.set("Return home")
+        self.btnReturnHome = Button(self.master, highlightbackground='black', fg='white', textvariable=self.strReturnHomeText, command=self.execHome)
+        self.btnReturnHome.pack(fill=BOTH, pady=10)
 
     def exit(self, event):
         com.closeSerial()
@@ -39,7 +45,7 @@ class ServoArduinoUI(object):
         self.popUpMenu.config(bg='black', fg='white')
         self.popUpMenu.pack(side=LEFT)
 
-        self.subFrame1()
+        self.frameTopSub1()
 
         self.btnServoPin = StringVar()
         self.btnServoPin.set("Confirm pins")
@@ -48,7 +54,7 @@ class ServoArduinoUI(object):
         
         self.frame1.pack(side=TOP, fill=X, padx=150, pady=5)
 
-    def subFrame1(self):
+    def frameTopSub1(self):
         self.subFrame1 = Frame(self.frame1)
         
         self.btnConnectText = StringVar()
@@ -63,7 +69,6 @@ class ServoArduinoUI(object):
 
         self.subFrame1.pack(side=LEFT)
         
-
     def frameTop2(self):
         global servoState
         self.frame2 = Frame(self.master)
@@ -121,10 +126,36 @@ class ServoArduinoUI(object):
         
         self.frame4.pack(side=TOP, fill=X, pady=10)
 
+    def frameTop5(self):
+        self.frame5 = Frame(self.master)
+        self.frame5.config(bg='black')
+
+        self.strSetHomeText = StringVar()
+        self.strSetHomeText.set("Set home")
+        self.btnSetHome1 = Button(self.frame5, highlightbackground='black', fg='white', textvariable=self.strSetHomeText, command=lambda:self.setHome('0', self.spinbox5.get()))
+        self.btnSetHome1.pack(side=LEFT, fill=X, expand=True, padx=20)
+        self.btnSetHome2 = Button(self.frame5, highlightbackground='black', fg='white', textvariable=self.strSetHomeText, command=lambda:self.setHome('1', self.spinbox6.get()))
+        self.btnSetHome2.pack(side=LEFT, fill=X, expand=True, padx=20)
+        self.btnSetHome3 = Button(self.frame5, highlightbackground='black', fg='white', textvariable=self.strSetHomeText, command=lambda:self.setHome('2', self.spinbox7.get()))
+        self.btnSetHome3.pack(side=LEFT, fill=X, expand=True, padx=20)
+        self.btnSetHome4 = Button(self.frame5, highlightbackground='black', fg='white', textvariable=self.strSetHomeText, command=lambda:self.setHome('3', self.spinbox8.get()))
+        self.btnSetHome4.pack(side=LEFT, fill=X, expand=True, padx=20)
+        
+        self.frame5.pack(side=TOP, fill=X)
+
     def frameSpinner(self, frame, string, idx):
         self.labelSpinner = Label(frame, text=string+' '+str(idx))
         self.labelSpinner.config(bg='black', fg='white')
         self.labelSpinner.pack(side=LEFT, fill=X, expand=True)
+
+    def setHome(self, num, v):
+        self.home[num] = str(v)
+        com.sendData(idx=num, val=str(v));
+
+    def execHome(self):
+        for i in range(4):
+            com.sendData(idx=str(i), val=self.home[str(i)])
+            time.sleep(1)
 
     def changeServoPin(self):
         global connected, changePin, servoState, angleState
