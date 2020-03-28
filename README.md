@@ -8,6 +8,7 @@ Steps to launch GUI in Mac:
 Steps:
   1. Open up the GUI
   2. Make sure the arduino is connected to the PC
+    a) Press 'Refresh' button will refresh COM ports
   3. Set servo pins
   4. Press 'Confirm pins' button to lock the servo pins
   5. Press 'Connect' button to connect to Arduino
