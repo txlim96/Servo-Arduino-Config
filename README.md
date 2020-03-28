@@ -2,7 +2,7 @@
 Uses a GUI from a PC to configure servo settings on Arduino
 
 Steps to launch GUI in Mac:
-  1. $ cd <your-directory>
+  1. $ cd [your-directory]
   2. $ python3 'Servo Arduino Config.py'
 
 Steps:
