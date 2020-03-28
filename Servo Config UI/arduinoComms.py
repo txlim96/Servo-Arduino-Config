@@ -47,10 +47,12 @@ def closeSerial():
         print(e)
         pass
 
-def sendData(idx, val):
+def sendData(mode='', idx='', val=''):
     print("sending...")
     try:
+        print('<'+mode+idx+':'+val+'>')
         ser.write('<'.encode('utf-8'))
+        ser.write(mode.encode('utf-8'))
         ser.write(idx.encode('utf-8'))
         ser.write(':'.encode('utf-8'))
         ser.write(val.encode('utf-8'))
@@ -62,19 +64,6 @@ def sendData(idx, val):
         print(e)
         pass
 
-def testServo(idx):
-    print("sending")
-    try:
-        ser.write('<'.encode('utf-8'))
-        ser.write(idx.encode('utf-8'))
-        ser.write('>'.encode('utf-8'))
-
-        time.sleep(0.5)
-        print('ready')
-    except Exception as e:
-        print(e)
-        pass
-        
 ##port = listSerialPorts()[0]
 ##setupSerial(port)
 
