@@ -1,96 +1,79 @@
 #include <Servo.h>
 #define STARTMARKER '<'
 #define ENDMARKER   '>'
+#define DELIMIT     ":"
+#define TEST_SERVO  "T"
+#define SET_PIN     "S"
 
-Servo servo[3];
+Servo servo[4];
 
-const byte numBytes = 6;
-byte pins[3];
+const byte numBytes = 10;
+byte pins[4];
 
-struct servoStruct {
-  short activePin = -1;
-  short angle = -1;
-} ss;
-
-servoStruct userPromptGUI() {
-  servoStruct temp;
-  short val = -1;
-  byte receivedBytes[numBytes];
-  byte dividerPos = 0;
-  static bool receivingData = false;
+void serialRead() {
+  char data[numBytes];
+  char* key;
+  char* value;
   static byte idx = 0;
+  static bool receivingData = false;
+  
+  while (Serial.available()) {
+    byte recv = Serial.read();
 
-  while (true) {
-    while (Serial.available()) {
-      byte recv = Serial.read();
-  
-      if (recv == ENDMARKER) {
-        receivingData = false;
-        receivedBytes[idx] = '\0';
-        if (idx != 1) {
-          temp.angle = 0;
-          for (byte i = dividerPos+1; i < idx; i++) {
-            temp.angle += (receivedBytes[i]-'0') * ceil(pow(10, idx-i-1));
-          }
-  //        Serial.println(ss.activePin);
-  //        Serial.println(ss.angle);
-        }
-        else {
-          servo[receivedBytes[0]-'0'].write(0);
-          delay(1000);
-          servo[receivedBytes[0]-'0'].write(180);
-          delay(1000);
-          servo[receivedBytes[0]-'0'].write(0);
-        }
-        idx = 0;
+    if (recv == ENDMARKER) {
+      receivingData = false;
+      data[idx] = NULL;
+      key = strtok(data, DELIMIT);    // split data before ':'
+      value = strtok(NULL, DELIMIT);  // split data after ':' and before end of str
+
+      if (strcmp(key, TEST_SERVO) == 0) {  // scan for 'T' in key
+        // e.g <T:0> or <T:1>
+        char* splitData;
+        byte v = strtol(value, &splitData, 10);   // convert str to long
+
+        servo[v].write(0);
+        delay(1000);
+        servo[v].write(180);
+        delay(1000);
+        servo[v].write(0);
+        delay(1000);
       }
-      
-      if (receivingData) {
-        receivedBytes[idx] = recv;
-        if (recv == ':') {
-          dividerPos = idx;
-          temp.activePin = 0;
-          for (byte i = 0; i < dividerPos; i++) {
-            temp.activePin += (receivedBytes[i]-'0') * ceil(pow(10, dividerPos-i-1));
-          }
-        }
-        idx++;
+      else if (strspn(key, SET_PIN) != 0) {   // scan for 'S' in key
+        // e.g <S0:6>
+        char extractedData[strlen(key)];
+        char* splitData;
+        byte k;
+        byte v;
+        for (byte i = 0; i < strlen(key)-1; i++) extractedData[i] = key[i+1];
+        extractedData[strlen(key)-1] = NULL;
+        
+        k = strtol(extractedData, &splitData, 10);
+        v = strtol(value, &splitData, 10);
+//        pins[k] = v;    // debug use
+        if (servo[k].attached() == true) servo[k].detach();
+        servo[k].attach(v);
       }
-  
-      if (recv == STARTMARKER) {
-        receivingData = true;
-        memset(receivedBytes, '\0', numBytes);
+      else {
+        // e.g <1:180>
+        char* splitData;
+        byte k = strtol(key, &splitData, 10);   // convert str to long
+        byte v = strtol(value, &splitData, 10); // convert str to long
+        servo[k].write(v);  
       }
+      idx = 0;
     }
-    if (temp.angle >= 0 && temp.activePin >= 0) break;
+
+    if (receivingData) data[idx++] = recv;
+    
+    if (recv == STARTMARKER) receivingData = true;
   }
-  return temp;
 }
 
 void setup() {
   Serial.begin(9600);
-  Serial.println("Please start with '<' and end with '>'!!");
-
-  servo[0].attach(6);
-  servo[1].attach(9);
-  servo[2].attach(10);
-
-//  for (byte i = 0; i < 3; i++) {
-//    Serial.print("Please enter servo "); Serial.print(i+1);
-//    Serial.println(" pin");
-//    pins[i] = userPrompt();
-//    servo[i].attach(pins[i]);
-//    Serial.println(pins[i]);
-//  }
+//  Serial.println("Please start with '<' and end with '>'!!");
 }
 
 void loop() {
-  byte servoIdx, angle;
-   ss = userPromptGUI();
-  if (ss.activePin != -1 && ss.angle != -1) {
-    servo[ss.activePin].write(ss.angle);
-  }
-  ss.activePin = -1;
-  ss.angle = -1;
-  Serial.flush();
+  serialRead();
 }
