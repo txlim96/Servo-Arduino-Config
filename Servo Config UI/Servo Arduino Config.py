@@ -13,25 +13,24 @@ class ServoArduinoUI(object):
         self.comPort = []
         self.home= {'0': '0', '1':'0', '2':'0', '3':'0'}
         connected = False
-        changePin = True
+        changePin = False
         servoState = 'normal'
         angleState = 'disabled'
 
-        self.spinServo = []         # list of servo spinners
-        self.spinAngle = []         # list of angle spinners
+        self.spinner = []           # list of servo spinners (0-3) and angle spinners (4-7)
         self.btnServoTest = []      # list of test buttons
         self.btnSetHome = []        # list of set home buttons
 
         self.frame = []
 
-        for i in range(4):
+        for i in range(5):
             frame = Frame(self.master, bg='black')
             self.frame.append(frame)
+            self.frame[i].pack(side=TOP, fill=X)
         
-        self.frameTop1()
-        self.frameTop23()
-        self.frameTop4()
-        self.frameTop5()
+        self.frameTop0()
+        self.frameTop12()
+        self.frameTop34()
 
         self.strReturnHomeText = StringVar()
         self.strReturnHomeText.set("Return home")
@@ -42,8 +41,7 @@ class ServoArduinoUI(object):
         com.closeSerial()
         self.master.quit()
 
-    def frameTop1(self):
-##        self.frames[0] = Frame(self.master, bg='black')
+    def frameTop0(self):
 
         self.labelCom = Label(self.frame[0], text="COM:")
         self.labelCom.config(bg='black', fg='white')
@@ -62,7 +60,7 @@ class ServoArduinoUI(object):
         self.changePin = Button(self.frame[0], wraplength=70, highlightbackground='black', fg='white', textvariable=self.strServoPin, command=self.changeServoPin)
         self.changePin.pack(side=LEFT, fill=BOTH)
         
-        self.frame[0].pack(side=TOP, fill=X, padx=150, pady=5)
+        self.frame[0].pack(padx=150, pady=5)
 
     def frameTopSub1(self):
         self.subFrame1 = Frame(self.frame[0])
@@ -77,7 +75,7 @@ class ServoArduinoUI(object):
 
         self.subFrame1.pack(side=LEFT)
         
-    def frameTop23(self):
+    def frameTop12(self):
         global servoState, angleState
         string = ['SERVO', 'ANGLE']
 
@@ -89,35 +87,26 @@ class ServoArduinoUI(object):
                 spinbox = Spinbox(self.frame[f], width=3, bg='black', fg='white')
                 
                 if f == 1:
-                    spinbox.config(values=[3,5,6,9,10,11], state=servoState, command=lambda idx=i:com.sendData('S', str(idx), self.spinServo[idx].get()))
-                    self.spinServo.append(spinbox)
-                    self.spinServo[i].pack(side=LEFT)
+                    spinbox.config(values=[3,5,6,9,10,11], state=servoState, command=lambda idx=i:com.sendData('S', str(idx), self.spinner[idx].get()))
                 elif f == 2:
-                    spinbox.config(from_=0, to=180, state=angleState, command=lambda idx=i:com.sendData('', str(idx), self.spinAngle[idx].get()))
-                    self.spinAngle.append(spinbox)
-                    self.spinAngle[i].pack(side=LEFT)
+                    spinbox.config(from_=0, to=180, state=angleState, command=lambda idx=i:com.sendData('', str(idx), self.spinner[idx+4].get()))
+                    
+                self.spinner.append(spinbox)
+                self.spinner[i+(f-1)*4].pack(side=LEFT)
+            self.frame[f].pack(pady=5)
 
-            self.frame[f].pack(side=TOP, fill=X, pady=5)
-
-    def frameTop4(self):
-        self.frame4 = Frame(self.master, bg='black')
-
+    def frameTop34(self):
         for i in range(4):
-            btn = Button(self.frame4, highlightbackground='black', fg='white', text='Test', command=lambda idx=i:com.sendData(mode='T', val=str(idx)))
+            btn = Button(self.frame[3], highlightbackground='black', fg='white', text='Test', command=lambda idx=i:com.sendData(mode='T', val=str(idx)))
             self.btnServoTest.append(btn)
             self.btnServoTest[i].pack(side=LEFT, fill=X, expand=True, padx=20)
-            
-        self.frame4.pack(side=TOP, fill=X, pady=10)
-
-    def frameTop5(self):
-        self.frame5 = Frame(self.master, bg='black')
 
         for i in range(4):
-            btn = Button(self.frame5, highlightbackground='black', fg='white', text='Set home', command=lambda idx=i:self.setHome(str(idx), self.spinAngle[idx].get()))
+            btn = Button(self.frame[4], highlightbackground='black', fg='white', text='Set home', command=lambda idx=i:self.setHome(str(idx), self.spinner[idx+4].get()))
             self.btnSetHome.append(btn)
             self.btnSetHome[i].pack(side=LEFT, fill=X, expand=True, padx=20)
 
-        self.frame5.pack(side=TOP, fill=X)
+        self.frame[3].pack(pady=10)
 
     def setHome(self, num, v):
         self.home[num] = str(v)
@@ -141,12 +130,10 @@ class ServoArduinoUI(object):
                 self.strServoPin.set("Change servo pins")
                 
             changePin = not changePin
-            for i in range(4):
-                self.spinServo[i].config(state=servoState)
-
-            for i in range(4):
-                self.spinAngle[i].config(state=angleState)
-            
+            for i in range(8):
+                st = servoState if i > 3 else angleState
+                self.spinner[i].config(state=st)
+                
         except Exception as e:
             print(e)
             pass
@@ -166,7 +153,7 @@ class ServoArduinoUI(object):
                     time.sleep(1)       # buffer period
 
                     for i in range(4):
-                        com.sendData('S', str(i), self.spinServo[i].get())
+                        com.sendData('S', str(i), self.spinner[i].get())
                         time.sleep(1)
                         
                 else:
